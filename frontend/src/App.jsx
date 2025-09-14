@@ -3,14 +3,15 @@
 import React, { useState } from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 
-// Importação de todos os componentes de página
-import LoginPage from './LoginPage';
-import DashboardLayout from './DashboardLayout';
-import ProductForm from './ProductForm';
-import SalesReport from './SalesReport';
-import InserirVendas from './InserirVendas';
-import Calculadora from './Calculadora';
-import ProductPage from './ProductPage';
+// ##### CORREÇÃO APLICADA AQUI #####
+// Adicionamos 'components/' ao caminho de cada importação de componente.
+import LoginPage from './components/LoginPage';
+import DashboardLayout from './components/DashboardLayout';
+import ProductForm from './components/ProductForm';
+import SalesReport from './components/SalesReport';
+import InserirVendas from './components/InserirVendas';
+import Calculadora from './components/Calculadora';
+import ProductPage from './components/ProductPage';
 
 function App() {
   const [user, setUser] = useState(null);
@@ -33,7 +34,7 @@ function App() {
             !user ? (
               <LoginPage onLoginSuccess={handleLoginSuccess} />
             ) : (
-              <Navigate to="/dashboard" /> // Se já estiver logado, redireciona para o dashboard
+              <Navigate to="/dashboard" />
             )
           }
         />
@@ -45,14 +46,14 @@ function App() {
             user ? (
               <DashboardLayout username={user} onLogout={handleLogout} />
             ) : (
-              <Navigate to="/login" /> // Se não estiver logado, redireciona para o login
+              <Navigate to="/login" />
             )
           }
         >
           {/* Rota padrão do dashboard, redireciona para relatórios */}
           <Route index element={<Navigate to="relatorios" />} />
           
-          {/* Rotas filhas que serão renderizadas dentro do DashboardLayout */}
+          {/* As rotas aqui não mudam, pois elas apenas definem a URL */}
           <Route path="produtos" element={<ProductPage />} /> 
           <Route path="estoque" element={<ProductForm />} />
           <Route path="inserir-vendas" element={<InserirVendas />} />
@@ -60,7 +61,7 @@ function App() {
           <Route path="calculadora" element={<Calculadora />} />
         </Route>
 
-        {/* Rota Padrão do App - Redireciona para o login ou dashboard */}
+        {/* Rota Padrão do App */}
         <Route
           path="*"
           element={<Navigate to={user ? "/dashboard" : "/login"} />}
