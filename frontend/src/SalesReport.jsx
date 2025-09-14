@@ -82,7 +82,7 @@ function SalesReport() {
                 </h3>
                 <div>
                     <label htmlFor="ano" className="text-sm font-medium text-gray-700 mr-2">Ano:</label>
-                    <select id="ano" value={anoSelecionado} onChange={(e) => setAnoSelecionado(e.target.value)} className="p-2 border border-gray-300 rounded-md shadow-sm">
+                    <select id="ano" value={anoSelecionado} onChange={(e) => setAnoSelecionado(e.target.value)} className="p-2 border bg-white border-gray-300 rounded-md shadow-sm">
                         {anosDisponiveis.map(ano => <option key={ano} value={ano}>{ano}</option>)}
                     </select>
                 </div>

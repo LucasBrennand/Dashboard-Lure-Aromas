@@ -72,7 +72,7 @@ function InserirVendas() {
                         id="quiosque"
                         value={selectedQuiosque}
                         onChange={(e) => setSelectedQuiosque(e.target.value)}
-                        className="mt-1 block w-full p-2 border border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500"
+                        className="mt-1 block w-full p-2 border border-gray-300 rounded-md shadow-sm focus:ring-green-500 focus:border-green-500"
                     >
                         {quiosques.map(q => (
                             <option key={q.id} value={q.id}>{q.nome}</option>
@@ -125,7 +125,7 @@ function InserirVendas() {
                 <div className="pt-4">
                     <button
                         type="submit"
-                        className="w-full flex justify-center py-3 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
+                        className="w-full flex justify-center py-3 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-green-600 hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
                     >
                         Salvar Lançamento
                     </button>

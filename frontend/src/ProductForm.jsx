@@ -115,13 +115,13 @@ function ProductForm() {
                             value={searchQuery}
                             onChange={handleSearchChange}
                             placeholder="Digite para buscar no banco de dados..."
-                            className="w-full p-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                            className="w-full p-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-green-300"
                         />
                         {isLoading && <p className="text-sm text-gray-500 mt-1">Buscando...</p>}
                         {searchResults.length > 0 && (
                             <ul className="absolute w-full mt-1 bg-white border border-gray-300 rounded-md shadow-lg z-10 max-h-60 overflow-y-auto">
                                 {searchResults.map(p => (
-                                    <li key={p.id} onClick={() => handleSelectProduct(p)} className="px-4 py-2 cursor-pointer hover:bg-blue-50">
+                                    <li key={p.id} onClick={() => handleSelectProduct(p)} className="px-4 py-2 cursor-pointer hover:bg-green-50">
                                         <span className="font-bold text-gray-700">{p.codigo_sku}</span> - <span className="text-gray-600">{p.descricao}</span>
                                     </li>
                                 ))}
@@ -133,15 +133,15 @@ function ProductForm() {
                          <label className="block text-sm font-medium text-gray-700 mb-1">
                             Produto Selecionado
                         </label>
-                        <div className="bg-blue-50 border border-blue-200 p-3 rounded-md flex justify-between items-center">
+                        <div className="bg-green-50 border border-green-200 p-3 rounded-md flex justify-between items-center">
                            <div>
-                             <p className="font-bold text-blue-800">{selectedProduct.descricao}</p>
+                             <p className="font-bold text-green-800">{selectedProduct.descricao}</p>
                              <p className="text-sm text-gray-600">Código: {selectedProduct.codigo_sku}</p>
                            </div>
                             <button
                                 type="button"
                                 onClick={() => setSelectedProduct(null)}
-                                className="bg-red-500 text-white text-xs font-bold px-2 py-1 rounded-full hover:bg-red-600"
+                                className="bg-red-500 text-white text-xs font-bold px-2 py-1 cursor-pointer rounded-full hover:bg-red-600"
                                 title="Limpar Seleção"
                             >
                                 X
@@ -166,7 +166,7 @@ function ProductForm() {
                              <label htmlFor="price" className="block text-sm font-medium text-gray-700 mb-1">Preço Unitário (R$)</label>
                             <input id="price" type="number" step="0.01" value={price} onChange={e => setPrice(e.target.value)} placeholder="Padrão do produto" className="w-full p-2 border border-gray-300 rounded-md" />
                         </div>
-                        <button type="submit" className="bg-blue-500 text-white font-bold py-2 px-4 rounded-md hover:bg-blue-600 transition-colors h-10">
+                        <button type="submit" className="bg-green-500 cursor-pointer text-white font-bold py-2 px-4 rounded-md hover:bg-green-600 transition-colors h-10">
                             Adicionar à Lista
                         </button>
                     </form>
@@ -188,7 +188,7 @@ function ProductForm() {
                                         {p.quantity} un. x R$ {p.price.toFixed(2)}
                                     </p>
                                 </div>
-                                <button onClick={() => handleRemoveProduct(p.id)} className="text-red-500 hover:text-red-700" title="Remover Item">
+                                <button onClick={() => handleRemoveProduct(p.id)} className="text-red-500 cursor-pointer hover:text-red-700" title="Remover Item">
                                     <TrashIcon />
                                 </button>
                             </div>
