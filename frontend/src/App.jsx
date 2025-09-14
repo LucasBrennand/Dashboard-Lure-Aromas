@@ -1,14 +1,16 @@
 // frontend/src/App.jsx
 
-
 import React, { useState } from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 
+// Importação de todos os componentes de página
 import LoginPage from './LoginPage';
-import DashboardLayout from './DashboardLayout'; // Nosso novo layout
-import ProductForm from './ProductForm';       // A função de entrada de estoque
-import SalesReport from './SalesReport';     // A função de relatório de vendas
+import DashboardLayout from './DashboardLayout';
+import ProductForm from './ProductForm';
+import SalesReport from './SalesReport';
 import InserirVendas from './InserirVendas';
+import Calculadora from './Calculadora';
+import ProductPage from './ProductPage';
 
 function App() {
   const [user, setUser] = useState(null);
@@ -24,7 +26,7 @@ function App() {
   return (
     <BrowserRouter>
       <Routes>
-        {/* ROTA DE LOGIN */}
+        {/* Rota de Login */}
         <Route
           path="/login"
           element={
@@ -36,7 +38,7 @@ function App() {
           }
         />
 
-        {/* ROTAS DO DASHBOARD (PROTEGIDAS) */}
+        {/* Rotas Protegidas do Dashboard */}
         <Route
           path="/dashboard"
           element={
@@ -47,14 +49,18 @@ function App() {
             )
           }
         >
-          {/* Rotas "filhas" que serão renderizadas dentro do <Outlet> do DashboardLayout */}
-          <Route index element={<Navigate to="estoque" />} /> {/* Rota padrão do dashboard */}
+          {/* Rota padrão do dashboard, redireciona para relatórios */}
+          <Route index element={<Navigate to="relatorios" />} />
+          
+          {/* Rotas filhas que serão renderizadas dentro do DashboardLayout */}
+          <Route path="produtos" element={<ProductPage />} /> 
           <Route path="estoque" element={<ProductForm />} />
-          <Route path="relatorios" element={<SalesReport />} />
           <Route path="inserir-vendas" element={<InserirVendas />} />
+          <Route path="relatorios" element={<SalesReport />} />
+          <Route path="calculadora" element={<Calculadora />} />
         </Route>
 
-        {/* ROTA PADRÃO - Redireciona para o login ou dashboard */}
+        {/* Rota Padrão do App - Redireciona para o login ou dashboard */}
         <Route
           path="*"
           element={<Navigate to={user ? "/dashboard" : "/login"} />}

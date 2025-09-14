@@ -137,6 +137,48 @@ app.get('/api/produtos/pesquisar', async (req, res) => {
     }
 });
 
+/**
+ * ROTA PARA LISTAR TODOS OS PRODUTOS COM PAGINAÇÃO E BUSCA
+ * URL: /api/produtos
+ */
+app.get('/api/produtos', async (req, res) => {
+    // Pega os parâmetros da URL, com valores padrão
+    const page = parseInt(req.query.page) || 1;
+    const limit = parseInt(req.query.limit) || 10;
+    const search = req.query.search || '';
+    const startIndex = (page - 1) * limit;
+
+    try {
+        // Prepara a consulta ao Supabase
+        let query = supabase
+            .from('produtos')
+            .select('*', { count: 'exact' }) // Pede para contar o total de itens
+            .order('descricao', { ascending: true }) // Ordena por nome
+            .range(startIndex, startIndex + limit - 1); // Define o intervalo de paginação
+
+        // Se houver um termo de busca, adiciona o filtro
+        if (search) {
+            query = query.or(`descricao.ilike.%${search}%,codigo_sku.ilike.%${search}%`);
+        }
+
+        const { data, error, count } = await query;
+
+        if (error) throw error;
+
+        // Retorna os produtos da página atual e a contagem total
+        res.json({
+            totalItems: count,
+            totalPages: Math.ceil(count / limit),
+            currentPage: page,
+            products: data
+        });
+
+    } catch (error) {
+        console.error("Erro ao listar produtos:", error);
+        res.status(500).json({ message: "Erro ao buscar produtos no banco de dados." });
+    }
+});
+
 // --- ROTAS DE ADMINISTRAÇÃO / CARGA INICIAL ---
 
 /**
