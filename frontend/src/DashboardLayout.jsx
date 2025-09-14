@@ -65,6 +65,17 @@ function DashboardLayout({ username, onLogout }) {
 
           <li>
             <NavLink
+              to="/dashboard/registrar-venda" // Nova rota
+              className={({ isActive }) =>
+                isActive ? `${linkClass} ${activeLinkClass}` : linkClass
+              }
+            >
+              Registrar Venda
+            </NavLink>
+          </li>
+
+          <li>
+            <NavLink
               to="/dashboard/inserir-vendas" // Nova rota
               className={({ isActive }) =>
                 isActive ? `${linkClass} ${activeLinkClass}` : linkClass
