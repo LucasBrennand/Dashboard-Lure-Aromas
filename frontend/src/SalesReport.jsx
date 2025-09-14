@@ -1,106 +1,114 @@
 // frontend/src/SalesReport.jsx
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import { Bar } from 'react-chartjs-2';
 import { Chart as ChartJS, CategoryScale, LinearScale, BarElement, Title, Tooltip, Legend } from 'chart.js';
 
 ChartJS.register(CategoryScale, LinearScale, BarElement, Title, Tooltip, Legend);
 
-// Ícone de Link para o novo campo
-const LinkIcon = () => (
-    <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1" />
-    </svg>
+// Componente para um cartão de KPI
+const KpiCard = ({ title, value, subtext }) => (
+    <div className="bg-white p-4 rounded-lg shadow">
+        <h4 className="text-sm font-medium text-gray-500">{title}</h4>
+        <p className="text-2xl font-bold text-gray-800">{value}</p>
+        {subtext && <p className="text-xs text-gray-400">{subtext}</p>}
+    </div>
 );
 
 function SalesReport() {
+    // Estados
+    const [dadosCompletos, setDadosCompletos] = useState(null);
+    const [kpis, setKpis] = useState(null);
     const [chartData, setChartData] = useState(null);
-    const [message, setMessage] = useState('Insira o link da planilha publicada do Google Sheets.');
-    const [sheetUrl, setSheetUrl] = useState(''); // Estado para guardar a URL
+    const [anosDisponiveis, setAnosDisponiveis] = useState([]);
+    const [anoSelecionado, setAnoSelecionado] = useState(new Date().getFullYear().toString());
 
-    const handleUrlSubmit = async (event) => {
-        event.preventDefault(); // Previne o recarregamento da página pelo formulário
-        if (!sheetUrl) {
-            setMessage('Por favor, insira uma URL.');
-            return;
-        }
+    useEffect(() => {
+        const fetchReportData = async () => {
+            try {
+                // Agora esperamos um objeto com 'chartData' e 'kpis'
+                const response = await axios.get('http://localhost:3001/api/relatorio-vendas');
+                setDadosCompletos(response.data.chartData);
+                setKpis(response.data.kpis);
 
-        setMessage('Buscando e processando dados da URL...');
-        
-        try {
-            // Envia a URL para a nova rota do backend
-            const response = await axios.post('http://localhost:3001/api/relatorio-url', {
-                url: sheetUrl
+                // Define os anos disponíveis com base nos KPIs calculados
+                const anos = Object.keys(response.data.kpis).sort().reverse();
+                setAnosDisponiveis(anos);
+                if (anos.length > 0 && !anos.includes(anoSelecionado)) {
+                    setAnoSelecionado(anos[0]);
+                }
+
+            } catch (error) {
+                console.error("Erro ao buscar dados do relatório:", error);
+            }
+        };
+        fetchReportData();
+    }, []);
+
+    useEffect(() => {
+        if (!dadosCompletos) return;
+        // ... (lógica para montar o gráfico, sem alterações)
+        const quiosques = Object.keys(dadosCompletos);
+        const todosMeses = new Set();
+        quiosques.forEach(q => {
+            Object.keys(dadosCompletos[q]).forEach(mesAno => {
+                const [ano, ] = mesAno.split('-');
+                if (ano === anoSelecionado) {
+                    todosMeses.add(mesAno);
+                }
             });
+        });
+        const labels = Array.from(todosMeses).sort();
+        const cores = ['rgba(255, 99, 132, 0.7)', 'rgba(54, 162, 235, 0.7)', 'rgba(75, 192, 192, 0.7)'];
+        setChartData({
+            labels: labels.map(l => new Date(l + '-02').toLocaleString('pt-BR', { month: 'long' })),
+            datasets: quiosques.map((quiosque, index) => ({
+                label: quiosque,
+                data: labels.map(label => dadosCompletos[quiosque][label] || 0),
+                backgroundColor: cores[index % cores.length],
+            })),
+        });
+    }, [dadosCompletos, anoSelecionado]);
 
-            // O resto da lógica para montar o gráfico é a mesma de antes
-            const dadosProcessados = response.data;
-            const quiosques = Object.keys(dadosProcessados);
-
-            const todosMeses = new Set();
-            quiosques.forEach(q => {
-                Object.keys(dadosProcessados[q]).forEach(mesAno => todosMeses.add(mesAno));
-            });
-            const labels = Array.from(todosMeses).sort();
-
-            const cores = ['rgba(255, 99, 132, 0.7)', 'rgba(54, 162, 235, 0.7)', 'rgba(75, 192, 192, 0.7)'];
-
-            setChartData({
-                labels: labels,
-                datasets: quiosques.map((quiosque, index) => ({
-                    label: quiosque,
-                    data: labels.map(label => dadosProcessados[quiosque][label] || 0),
-                    backgroundColor: cores[index % cores.length],
-                })),
-            });
-
-            setMessage('Relatório gerado com sucesso a partir do link!');
-
-        } catch (error) {
-            console.error("Erro ao buscar dados da URL:", error);
-            setMessage('Falha ao processar o relatório. Verifique o link e se a planilha está publicada como CSV.');
-            setChartData(null);
-        }
-    };
+    const kpisDoAno = kpis ? kpis[anoSelecionado] : null;
+    const formatCurrency = (value) => value ? `R$ ${value.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}` : 'R$ 0,00';
 
     return (
-        <div className="bg-white p-6 rounded-lg shadow-md">
-            <h3 className="text-lg font-semibold text-gray-800 border-b pb-2 mb-4">
-                Dashboard de Vendas por Link
-            </h3>
-            <p className="text-sm text-gray-600 mb-4">
-                Cole o link da sua planilha publicada como CSV do Google Sheets para gerar o relatório.
-            </p>
-
-            <form onSubmit={handleUrlSubmit} className="flex items-center space-x-2">
-                <div className="relative flex-grow">
-                    <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                        <LinkIcon />
-                    </div>
-                    <input
-                        type="url"
-                        value={sheetUrl}
-                        onChange={(e) => setSheetUrl(e.target.value)}
-                        placeholder="https://docs.google.com/spreadsheets/d/.../pub?output=csv"
-                        className="w-full p-2 pl-10 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500"
-                    />
+        <div className="space-y-6">
+            <div className="flex justify-between items-center">
+                <h3 className="text-xl font-semibold text-gray-800">
+                    Relatório de Faturamento
+                </h3>
+                <div>
+                    <label htmlFor="ano" className="text-sm font-medium text-gray-700 mr-2">Ano:</label>
+                    <select id="ano" value={anoSelecionado} onChange={(e) => setAnoSelecionado(e.target.value)} className="p-2 border border-gray-300 rounded-md shadow-sm">
+                        {anosDisponiveis.map(ano => <option key={ano} value={ano}>{ano}</option>)}
+                    </select>
                 </div>
-                <button
-                    type="submit"
-                    className="bg-indigo-600 text-white font-bold py-2 px-4 rounded-md hover:bg-indigo-700 transition-colors"
-                >
-                    Gerar Relatório
-                </button>
-            </form>
+            </div>
 
-            <p className="text-sm font-medium text-gray-700 mt-4">{message}</p>
-            
-            {chartData && (
-                <div className="mt-6">
-                    <Bar data={chartData} options={{ /* ...opções do gráfico... */ }} />
+            {/* Seção de KPIs */}
+            {kpisDoAno && (
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                    <KpiCard title="Faturamento Total no Ano" value={formatCurrency(kpisDoAno.faturamentoTotal)} />
+                    <KpiCard title="Média Mensal" value={formatCurrency(kpisDoAno.mediaMensal)} />
+                    <KpiCard title="Melhor Mês" value={kpisDoAno.melhorMes.nome} subtext={formatCurrency(kpisDoAno.melhorMes.valor)} />
+                    <KpiCard title="Quiosque Destaque" value={kpisDoAno.quiosqueDestaque.nome} subtext={formatCurrency(kpisDoAno.quiosqueDestaque.valor)} />
                 </div>
             )}
+            
+            {/* Gráfico */}
+            <div className="bg-white p-6 rounded-lg shadow-md">
+                {chartData ? (
+                    <Bar
+                        data={chartData}
+                        options={{ responsive: true, plugins: { title: { text: `Comparativo de Vendas - ${anoSelecionado}` } }, scales: { x: { stacked: true }, y: { stacked: true, ticks: { callback: (value) => `R$ ${value.toLocaleString('pt-BR')}` } } } }}
+                    />
+                ) : (
+                    <p className="text-gray-500 text-center py-10">Carregando dados do relatório...</p>
+                )}
+            </div>
         </div>
     );
 }
