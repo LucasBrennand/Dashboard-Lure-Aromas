@@ -47,10 +47,8 @@ function ProductPage() {
     return (
         <div className="bg-white p-6 rounded-lg shadow-md">
             <h3 className="text-xl font-semibold text-[#7a5521] border-b pb-3 mb-4">
-                Catálogo de Produtos
+                Catálogo de Produtos (do Arquivo CSV)
             </h3>
-
-            {/* Barra de Busca */}
             <div className="mb-4">
                 <input
                     type="text"
@@ -60,8 +58,6 @@ function ProductPage() {
                     className="w-full md:w-1/3 p-2 border border-gray-300 rounded-md"
                 />
             </div>
-
-            {/* Tabela de Produtos */}
             <div className="overflow-x-auto">
                 <table className="min-w-full divide-y divide-gray-200">
                     <thead className="bg-gray-50">

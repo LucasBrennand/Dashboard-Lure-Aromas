@@ -31,11 +31,14 @@ function ProductForm() {
 
         setIsLoading(true);
         try {
-            // Chama a rota /api/produtos/pesquisar no backend
-            const response = await axios.get('http://localhost:3001/api/produtos/pesquisar', {
-                params: { query }
+            // A rota para busca agora é a mesma da página de produtos
+            const response = await axios.get('http://localhost:3001/api/produtos', {
+                params: {
+                    search: query,
+                    limit: 10 // Apenas os 10 primeiros resultados
+                }
             });
-            setSearchResults(response.data); // Atualiza os resultados com os dados do banco
+            setSearchResults(response.data.products); // Usamos a lista de produtos da resposta
         } catch (error) {
             console.error("Erro ao buscar produtos:", error);
             setSearchResults([]);
