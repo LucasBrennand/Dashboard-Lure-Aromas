@@ -114,6 +114,83 @@ app.get('/api/produtos/pesquisar', async (req, res) => {
     }
 });
 
+/**
+ * ROTA PARA BUSCAR E CONSOLIDAR DADOS DE VENDAS, INCLUINDO KPIs
+ * URL: /api/relatorio-vendas
+ */
+app.get('/api/relatorio-vendas', async (req, res) => {
+    try {
+        const { data, error } = await supabase
+            .from('vendas_mensais')
+            .select(`
+                ano,
+                mes,
+                valor_total,
+                quiosques ( nome )
+            `);
+
+        if (error) throw error;
+
+        // --- Lógica para calcular os KPIs ---
+        const faturamentoPorAno = {};
+        const faturamentoPorQuiosqueAno = {};
+        const faturamentoPorMesAno = {};
+
+        data.forEach(venda => {
+            const ano = venda.ano.toString();
+            const nomeQuiosque = venda.quiosques.nome;
+
+            // Inicializa estruturas se não existirem
+            if (!faturamentoPorAno[ano]) faturamentoPorAno[ano] = 0;
+            if (!faturamentoPorQuiosqueAno[ano]) faturamentoPorQuiosqueAno[ano] = {};
+            if (!faturamentoPorQuiosqueAno[ano][nomeQuiosque]) faturamentoPorQuiosqueAno[ano][nomeQuiosque] = 0;
+            if (!faturamentoPorMesAno[ano]) faturamentoPorMesAno[ano] = {};
+            
+            const mesNome = new Date(ano, venda.mes - 1).toLocaleString('pt-BR', { month: 'long' });
+            if (!faturamentoPorMesAno[ano][mesNome]) faturamentoPorMesAno[ano][mesNome] = 0;
+
+            // Soma os valores
+            faturamentoPorAno[ano] += venda.valor_total;
+            faturamentoPorQuiosqueAno[ano][nomeQuiosque] += venda.valor_total;
+            faturamentoPorMesAno[ano][mesNome] += venda.valor_total;
+        });
+
+        const kpis = {};
+        for (const ano in faturamentoPorAno) {
+            // Quiosque destaque do ano
+            const quiosquesDoAno = faturamentoPorQuiosqueAno[ano];
+            const quiosqueDestaque = Object.keys(quiosquesDoAno).reduce((a, b) => quiosquesDoAno[a] > quiosquesDoAno[b] ? a : b);
+            
+            // Melhor mês do ano
+            const mesesDoAno = faturamentoPorMesAno[ano];
+            const melhorMes = Object.keys(mesesDoAno).reduce((a, b) => mesesDoAno[a] > mesesDoAno[b] ? a : b);
+
+            kpis[ano] = {
+                faturamentoTotal: faturamentoPorAno[ano],
+                mediaMensal: faturamentoPorAno[ano] / Object.keys(mesesDoAno).length,
+                melhorMes: { nome: melhorMes, valor: mesesDoAno[melhorMes] },
+                quiosqueDestaque: { nome: quiosqueDestaque, valor: quiosquesDoAno[quiosqueDestaque] }
+            };
+        }
+
+        // --- Lógica para formatar dados para o gráfico (a mesma de antes) ---
+        const dadosProcessados = {};
+        data.forEach(venda => {
+            const nomeQuiosque = venda.quiosques.nome;
+            const mesAno = `${venda.ano}-${String(venda.mes).padStart(2, '0')}`;
+            if (!dadosProcessados[nomeQuiosque]) dadosProcessados[nomeQuiosque] = {};
+            dadosProcessados[nomeQuiosque][mesAno] = venda.valor_total;
+        });
+
+        // Retorna tanto os dados para o gráfico quanto os KPIs calculados
+        res.json({ chartData: dadosProcessados, kpis });
+
+    } catch (error) {
+        console.error("Erro ao gerar relatório de vendas:", error);
+        res.status(500).json({ message: "Erro ao buscar dados para o relatório." });
+    }
+});
+
 
 // --- ROTAS DE ADMINISTRAÇÃO / CARGA INICIAL ---
 
