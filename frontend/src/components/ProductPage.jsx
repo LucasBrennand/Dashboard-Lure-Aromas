@@ -13,12 +13,23 @@ const TrashIcon = () => ( <svg xmlns="http://www.w3.org/2000/svg" className="h-5
 // --- MODAL PARA ADICIONAR E EDITAR PRODUTO ---
 const AddEditProductModal = ({ isOpen, onClose, onSave, product }) => {
     const isEditMode = !!product;
-    const [formData, setFormData] = useState({
-        codigo_sku: isEditMode ? product.codigo_sku : '',
-        descricao: isEditMode ? product.descricao : '',
-        preco_padrao: isEditMode ? product.preco_padrao : ''
-    });
+    const [formData, setFormData] = useState({});
     const [error, setError] = useState('');
+
+    // ##### CORREÇÃO APLICADA AQUI #####
+    // Este useEffect garante que o formulário seja preenchido ou limpo
+    // toda vez que o modal for aberto.
+    useEffect(() => {
+        if (isOpen) {
+            setFormData({
+                codigo_sku: isEditMode ? product.codigo_sku : '',
+                descricao: isEditMode ? product.descricao : '',
+                preco_padrao: isEditMode ? product.preco_padrao : ''
+            });
+            setError(''); // Limpa erros antigos
+        }
+    }, [isOpen, product, isEditMode]);
+
 
     if (!isOpen) return null;
 

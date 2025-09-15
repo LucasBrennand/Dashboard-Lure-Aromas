@@ -5,9 +5,10 @@ const express = require('express');
 const cors = require('cors');
 const { createClient } = require('@supabase/supabase-js');
 const fs = require('fs');
-const xlsx = require('xlsx'); // <-- A linha que estava faltando foi adicionada aqui
-const multer = require('multer');
 const Papa = require('papaparse');
+const xlsx = require('xlsx'); // Importação para criar arquivos Excel
+const multer = require('multer'); // Importação para upload de arquivos
+const axios = require('axios'); // Importação para requisições HTTP
 
 // --- CONFIGURAÇÃO INICIAL ---
 // Suas credenciais do Supabase. Lembre-se que a chave 'supabaseKey' é secreta.
@@ -17,6 +18,7 @@ const supabase = createClient(supabaseUrl, supabaseKey);
 
 const app = express();
 const PORT = 3001;
+const upload = multer({ storage: multer.memoryStorage() });
 
 // --- MIDDLEWARES ---
 app.use(cors());
@@ -197,47 +199,99 @@ app.get('/api/produtos', async (req, res) => {
 });
 
 /**
- * ROTA PARA EXPORTAR TODOS OS PRODUTOS PARA UMA PLANILHA XLSX
- * URL: /api/produtos/exportar
+ * ROTA PARA ADICIONAR UM NOVO PRODUTO
+ */
+app.post('/api/produtos', async (req, res) => {
+    const { codigo_sku, descricao, preco_padrao } = req.body;
+    if (!codigo_sku || !descricao || preco_padrao === undefined) {
+        return res.status(400).json({ message: "Dados do produto incompletos." });
+    }
+    try {
+        const { data, error } = await supabase.from('produtos').insert([{ codigo_sku, descricao, preco_padrao }]).select().single();
+        if (error) {
+            if (error.code === '23505') {
+                return res.status(409).json({ message: `O código SKU '${codigo_sku}' já existe.` });
+            }
+            throw error;
+        }
+        res.status(201).json({ message: "Produto adicionado com sucesso!", product: data });
+    } catch (error) {
+        res.status(500).json({ message: "Erro ao salvar o produto.", error: error.message });
+    }
+});
+
+/**
+ * ROTA PARA ATUALIZAR UM PRODUTO EXISTENTE
+ */
+app.put('/api/produtos/:id', async (req, res) => {
+    const { id } = req.params;
+    const { codigo_sku, descricao, preco_padrao } = req.body;
+    if (!codigo_sku || !descricao || preco_padrao === undefined) {
+        return res.status(400).json({ message: "Dados do produto incompletos." });
+    }
+    try {
+        const { data, error } = await supabase
+            .from('produtos')
+            .update({ codigo_sku, descricao, preco_padrao })
+            .eq('id', id)
+            .select()
+            .single();
+        if (error) {
+            if (error.code === '23505') {
+                return res.status(409).json({ message: `O código SKU '${codigo_sku}' já pertence a outro produto.` });
+            }
+            throw error;
+        }
+        if (!data) return res.status(404).json({ message: "Produto não encontrado." });
+        res.status(200).json({ message: "Produto atualizado com sucesso!", product: data });
+    } catch (error) {
+        console.error("Erro ao atualizar produto:", error);
+        res.status(500).json({ message: "Erro ao atualizar o produto.", error: error.message });
+    }
+});
+
+/**
+ * ROTA PARA EXCLUIR UM PRODUTO
+ */
+app.delete('/api/produtos/:id', async (req, res) => {
+    const { id } = req.params;
+    try {
+        const { error } = await supabase.from('produtos').delete().eq('id', id);
+        if (error) throw error;
+        res.status(200).json({ message: "Produto excluído com sucesso!" });
+    } catch (error) {
+        console.error("Erro ao excluir produto:", error);
+        res.status(500).json({ message: "Erro ao excluir o produto.", error: error.message });
+    }
+});
+
+/**
+ * ROTA PARA EXPORTAR TODOS OS PRODUTOS PARA PLANILHA
  */
 app.get('/api/produtos/exportar', async (req, res) => {
     try {
-        // Busca TODOS os produtos no banco, sem limite de paginação
-        const { data, error } = await supabase
-            .from('produtos')
-            .select('codigo_sku, descricao, preco_padrao')
-            .order('descricao', { ascending: true });
-
+        const { data, error } = await supabase.from('produtos').select('codigo_sku, descricao, preco_padrao').order('descricao', { ascending: true });
         if (error) throw error;
-
-        // Prepara os dados para a planilha
         const cabecalho = ['Código', 'Descrição', 'Preço Padrão'];
         const dadosParaPlanilha = data.map(p => ({
             'Código': p.codigo_sku,
             'Descrição': p.descricao,
             'Preço Padrão': p.preco_padrao
         }));
-
-        // Cria a planilha em memória
         const workbook = xlsx.utils.book_new();
         const worksheet = xlsx.utils.json_to_sheet(dadosParaPlanilha, { header: cabecalho });
         xlsx.utils.book_append_sheet(workbook, worksheet, 'Produtos');
-        
         const buffer = xlsx.write(workbook, { bookType: 'xlsx', type: 'buffer' });
-
-        // Envia o arquivo para download
         res.setHeader('Content-Disposition', 'attachment; filename="catalogo_produtos.xlsx"');
         res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
         res.send(buffer);
-
     } catch (error) {
         console.error("Erro ao exportar produtos:", error);
         res.status(500).json({ message: "Ocorreu um erro ao gerar a planilha de produtos." });
     }
 });
 
-
-// --- ROTAS DE ADMINISTRAÇÃO / CARGA INICIAL ---
+// --- ROTA DE ADMINISTRAÇÃO / CARGA INICIAL ---
 
 /**
  * ROTA PARA IMPORTAÇÃO INICIAL DE PRODUTOS DO CSV
@@ -281,111 +335,6 @@ app.post('/api/importar-produtos', async (req, res) => {
         res.status(500).json({ message: "Não foi possível ler o arquivo produtos.csv no backend." });
     }
 });
-
-/**
- * ROTA PARA ADICIONAR UM NOVO PRODUTO
- * URL: /api/produtos
- * Método: POST
- */
-app.post('/api/produtos', async (req, res) => {
-    const { codigo_sku, descricao, preco_padrao } = req.body;
-
-    // Validação básica dos dados recebidos
-    if (!codigo_sku || !descricao || preco_padrao === undefined) {
-        return res.status(400).json({ message: "Dados do produto incompletos. Código, descrição e preço são obrigatórios." });
-    }
-
-    try {
-        // Usa o cliente Supabase para inserir a nova linha na tabela 'produtos'
-        const { data, error } = await supabase
-            .from('produtos')
-            .insert([
-                {
-                    codigo_sku: codigo_sku,
-                    descricao: descricao,
-                    preco_padrao: preco_padrao
-                }
-            ])
-            .select() // Retorna o produto que foi criado
-            .single(); // Garante que o resultado seja um único objeto, não um array
-
-        if (error) {
-            // Verifica se o erro é de duplicata (baseado na regra UNIQUE que criamos)
-            if (error.code === '23505') { // Código de erro padrão para violação de unicidade
-                return res.status(409).json({ message: `O código SKU '${codigo_sku}' já existe. Por favor, use um código diferente.` });
-            }
-            throw error;
-        }
-
-        res.status(201).json({ message: "Produto adicionado com sucesso!", product: data });
-
-    } catch (error) {
-        console.error("Erro ao adicionar produto:", error);
-        res.status(500).json({ message: "Erro ao salvar o produto no banco de dados.", error: error.message });
-    }
-});
-
-/**
- * ROTA PARA ATUALIZAR UM PRODUTO EXISTENTE
- * URL: /api/produtos/:id
- * Método: PUT
- */
-app.put('/api/produtos/:id', async (req, res) => {
-    const { id } = req.params; // Pega o ID do produto da URL
-    const { codigo_sku, descricao, preco_padrao } = req.body;
-
-    // Validação
-    if (!codigo_sku || !descricao || preco_padrao === undefined) {
-        return res.status(400).json({ message: "Dados do produto incompletos." });
-    }
-
-    try {
-        const { data, error } = await supabase
-            .from('produtos')
-            .update({
-                codigo_sku: codigo_sku,
-                descricao: descricao,
-                preco_padrao: preco_padrao
-            })
-            .eq('id', id) // A condição: atualize ONDE o id for igual ao recebido
-            .select()
-            .single();
-
-        if (error) throw error;
-        if (!data) return res.status(404).json({ message: "Produto não encontrado." });
-
-        res.status(200).json({ message: "Produto atualizado com sucesso!", product: data });
-
-    } catch (error) {
-        console.error("Erro ao atualizar produto:", error);
-        res.status(500).json({ message: "Erro ao atualizar o produto.", error: error.message });
-    }
-});
-
-/**
- * ROTA PARA EXCLUIR UM PRODUTO
- * URL: /api/produtos/:id
- * Método: DELETE
- */
-app.delete('/api/produtos/:id', async (req, res) => {
-    const { id } = req.params;
-
-    try {
-        const { error } = await supabase
-            .from('produtos')
-            .delete()
-            .eq('id', id);
-
-        if (error) throw error;
-
-        res.status(200).json({ message: "Produto excluído com sucesso!" });
-
-    } catch (error) {
-        console.error("Erro ao excluir produto:", error);
-        res.status(500).json({ message: "Erro ao excluir o produto.", error: error.message });
-    }
-});
-
 
 // --- INICIALIZAÇÃO DO SERVIDOR ---
 app.listen(PORT, () => {
