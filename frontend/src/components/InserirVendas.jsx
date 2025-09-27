@@ -15,7 +15,7 @@ function InserirVendas() {
     useEffect(() => {
         const fetchQuiosques = async () => {
             try {
-                const response = await axios.get('http://localhost:3001/api/quiosques');
+                const response = await axios.get(`${import.meta.env.VITE_API_URL}/api/quiosques`);
                 setQuiosques(response.data);
                 if (response.data.length > 0) {
                     setSelectedQuiosque(response.data[0].id);
@@ -38,7 +38,7 @@ function InserirVendas() {
         }
 
         try {
-            const response = await axios.post('http://localhost:3001/api/vendas-mensais', {
+            const response = await axios.post(`${import.meta.env.VITE_API_URL}/api/vendas-mensais`, {
                 quiosque_id: selectedQuiosque,
                 ano: selectedYear,
                 mes: selectedMonth,

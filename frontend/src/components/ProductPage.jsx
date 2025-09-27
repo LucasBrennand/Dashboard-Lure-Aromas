@@ -44,9 +44,9 @@ const AddEditProductModal = ({ isOpen, onClose, onSave, product }) => {
         try {
             const productData = { ...formData, preco_padrao: parseFloat(formData.preco_padrao) };
             if (isEditMode) {
-                await axios.put(`http://localhost:3001/api/produtos/${product.id}`, productData);
+                await axios.put(`${import.meta.env.VITE_API_URL}/api/produtos/${product.id}`, productData);
             } else {
-                await axios.post('http://localhost:3001/api/produtos', productData);
+                await axios.post(`${import.meta.env.VITE_API_URL}/api/produtos`, productData);
             }
             onSave();
             onClose();

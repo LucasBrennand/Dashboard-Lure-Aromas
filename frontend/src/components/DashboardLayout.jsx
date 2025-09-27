@@ -35,7 +35,7 @@ function DashboardLayout({ username, onLogout }) {
     const handleImportarProdutos = async () => {
         if (window.confirm("Você tem certeza que deseja importar a lista de produtos do arquivo CSV? Esta ação deve ser executada apenas uma vez.")) {
             try {
-                const response = await axios.post("http://localhost:3001/api/importar-produtos");
+                const response = await axios.post(`${import.meta.env.VITE_API_URL}/importar-produtos`);
                 alert(response.data.message);
             } catch (error) {
                 console.error("Erro ao importar produtos:", error);

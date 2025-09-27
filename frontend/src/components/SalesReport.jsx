@@ -29,7 +29,7 @@ function SalesReport() {
         const fetchReportData = async () => {
             setIsLoading(true);
             try {
-                const response = await axios.get('http://localhost:3001/api/relatorio-vendas');
+                const response = await axios.get(`${import.meta.env.VITE_API_URL}/api/relatorio-vendas`);
 
                 // ##### CORREÇÃO APLICADA AQUI #####
                 // Verificamos se a resposta e os dados essenciais existem

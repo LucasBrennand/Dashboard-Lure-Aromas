@@ -32,7 +32,7 @@ function ProductForm() {
         setIsLoading(true);
         try {
             // A rota para busca agora é a mesma da página de produtos
-            const response = await axios.get('http://localhost:3001/api/produtos', {
+            const response = await axios.get(`${import.meta.env.VITE_API_URL}/api/produtos`, {
                 params: {
                     search: query,
                     limit: 10 // Apenas os 10 primeiros resultados
@@ -83,7 +83,7 @@ function ProductForm() {
             return;
         }
         try {
-            const response = await axios.post('http://localhost:3001/api/gerar-planilha',
+            const response = await axios.post(`${import.meta.env.VITE_API_URL}/api/gerar-planilha`,
                 { products }, { responseType: 'blob' }
             );
             const url = window.URL.createObjectURL(new Blob([response.data]));

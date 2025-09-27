@@ -12,7 +12,7 @@ function LoginPage({ onLoginSuccess }) {
     event.preventDefault();
     setMessage('Verificando...');
     try {
-      const response = await axios.post('http://localhost:3001/api/login', { username, password });
+      const response = await axios.post(`${import.meta.env.VITE_API_URL}/api/login`, { username, password });
       if (response.data.success) {
         onLoginSuccess(username);
         navigate('/dashboard');
