@@ -33,7 +33,7 @@ function LoginPage({ onLoginSuccess }) {
           <div>
             <input
               type="text"
-              placeholder="Usuário (use: admin)"
+              placeholder="Usuário"
               value={username}
               onChange={(e) => setUsername(e.target.value)}
               className="w-full p-3 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#8f6628]"
@@ -42,7 +42,7 @@ function LoginPage({ onLoginSuccess }) {
           <div>
             <input
               type="password"
-              placeholder="Senha (use: 1234)"
+              placeholder="Senha"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               className="w-full p-3 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#8f6628]"
