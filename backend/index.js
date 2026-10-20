@@ -18,12 +18,24 @@ const supabaseKey = process.env.SUPABASE_KEY;
 const supabase = createClient(supabaseUrl, supabaseKey);
 
 const app = express();
-const PORT = 3001;
+const PORT = process.env.PORT || 3001;
 const upload = multer({ storage: multer.memoryStorage() });
 
 // --- MIDDLEWARES ---
 app.use(cors());
 app.use(express.json());
+
+// Health check also performs a lightweight database read for scheduled uptime checks.
+app.get("/api/health", async (req, res) => {
+  try {
+    const { error } = await supabase.from("quiosques").select("id").limit(1);
+    if (error) throw error;
+    res.json({ status: "ok", database: "ok" });
+  } catch (error) {
+    console.error("Health check do banco falhou:", error);
+    res.status(503).json({ status: "error", database: "unavailable" });
+  }
+});
 
 // --- ROTAS DA APLICAÇÃO (BASEADAS NO BANCO DE DADOS) ---
 
@@ -57,6 +69,22 @@ app.get("/api/quiosques", async (req, res) => {
   } catch (error) {
     console.error("Erro ao buscar quiosques:", error);
     res.status(500).json({ message: "Erro ao buscar quiosques." });
+  }
+});
+
+/** Lista os lançamentos para edição e cópia. */
+app.get("/api/vendas-mensais", async (req, res) => {
+  try {
+    const { data, error } = await supabase
+      .from("vendas_mensais")
+      .select("quiosque_id, ano, mes, valor_total, quiosques ( nome )")
+      .order("ano", { ascending: false })
+      .order("mes", { ascending: false });
+    if (error) throw error;
+    res.json(data);
+  } catch (error) {
+    console.error("Erro ao buscar vendas mensais:", error);
+    res.status(500).json({ message: "Erro ao buscar os lançamentos mensais." });
   }
 });
 
